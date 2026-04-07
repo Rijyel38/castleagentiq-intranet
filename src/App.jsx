@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 
 // ── Import your artifacts here ──
 // Each artifact should be a .jsx file in src/apps/ with a default export
@@ -12,6 +12,9 @@ const APPS = [
   // { id: 'newapp', name: 'New App', icon: '✨', desc: 'Description', component: NewApp },
 ]
 
+/**
+ * CastleAgentIQ intranet shell and app launcher.
+ */
 export default function App() {
   const [active, setActive] = useState(null)
 
