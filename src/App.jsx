@@ -46,7 +46,7 @@ export default function App() {
       <div style={{ minHeight: '100vh' }}>
         {/* Floating back button */}
         <button onClick={() => navigate(null)}
-          style={{ position: 'fixed', top: 12, left: 12, zIndex: 9999,
+          style={{ position: 'fixed', top: 12, right: 12, zIndex: 9999,
             padding: '6px 14px', borderRadius: 8,
             background: 'rgba(15,23,41,0.85)', backdropFilter: 'blur(8px)',
             border: '1px solid rgba(255,255,255,0.1)',
