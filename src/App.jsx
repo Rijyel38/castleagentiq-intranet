@@ -42,18 +42,43 @@ export default function App() {
 
   // ── If an app is active, render it full-screen ──
   if (ActiveComponent) {
+    const activeApp = APPS.find(a => a.id === active)
     return (
-      <div style={{ minHeight: '100vh' }}>
-        {/* Floating back button */}
-        <button onClick={() => navigate(null)}
-          style={{ position: 'fixed', top: 12, right: 12, zIndex: 9999,
-            padding: '6px 14px', borderRadius: 8,
-            background: 'rgba(15,23,41,0.85)', backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: '#94a3b8', fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-          ← Intranet
-        </button>
+      <div style={{ minHeight: '100vh', background: '#0a0f1e' }}>
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 1000,
+            backdropFilter: 'blur(10px)',
+            background: 'rgba(10,15,30,0.88)',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            padding: '10px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+          }}
+        >
+          <button
+            onClick={() => navigate(null)}
+            style={{
+              padding: '8px 14px',
+              borderRadius: 10,
+              background: 'rgba(15,23,41,0.95)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: '#cbd5e1',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ← Back to Intranet
+          </button>
+          <div style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600 }}>
+            {activeApp?.name}
+          </div>
+        </div>
         <ActiveComponent />
       </div>
     )
@@ -67,7 +92,7 @@ export default function App() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
       `}</style>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '60px 24px' }}>
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: '56px 24px' }}>
         {/* Header */}
         <div style={{ marginBottom: 48 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: '#2e75b6', marginBottom: 6 }}>
@@ -82,13 +107,14 @@ export default function App() {
         </div>
 
         {/* App cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {APPS.map(app => (
-            <div key={app.id} onClick={() => navigate(app.id)}
-              style={{ padding: '24px 28px', borderRadius: 16, cursor: 'pointer',
+            <button key={app.id} onClick={() => navigate(app.id)}
+              aria-label={`Open ${app.name}`}
+              style={{ textAlign: 'left', width: '100%', padding: '24px 28px', borderRadius: 16, cursor: 'pointer',
                 background: 'rgba(255,255,255,0.02)',
                 border: '1.5px solid rgba(255,255,255,0.06)',
-                transition: 'all 0.2s ease' }}
+                transition: 'all 0.2s ease', appearance: 'none' }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = 'rgba(46,117,182,0.4)'
                 e.currentTarget.style.background = 'rgba(46,117,182,0.05)'
@@ -98,6 +124,14 @@ export default function App() {
                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
                 e.currentTarget.style.background = 'rgba(255,255,255,0.02)'
                 e.currentTarget.style.transform = 'translateY(0)'
+              }}
+              onFocus={e => {
+                e.currentTarget.style.borderColor = 'rgba(46,117,182,0.5)'
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(46,117,182,0.2)'
+              }}
+              onBlur={e => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+                e.currentTarget.style.boxShadow = 'none'
               }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>{app.icon}</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>{app.name}</div>
@@ -105,7 +139,7 @@ export default function App() {
               <div style={{ marginTop: 14, fontSize: 12, color: '#2e75b6', fontWeight: 600 }}>
                 Launch →
               </div>
-            </div>
+            </button>
           ))}
 
           {/* Placeholder for future apps */}
