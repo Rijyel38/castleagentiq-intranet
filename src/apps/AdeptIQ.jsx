@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import Anthropic from "@anthropic-ai/sdk";
 
 // ─── BRAND TOKENS ───
 const T = {
@@ -222,16 +223,26 @@ const MODULES = [
 
 // ─── STORAGE HELPERS ───
 const STORAGE_KEY = "adeptiq-progress";
+const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
+const ANTHROPIC_MAX_TOKENS = 1000;
+const ANTHROPIC_API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
 async function loadProgress() {
   try {
     const r = await window.storage.get(STORAGE_KEY);
     return r ? JSON.parse(r.value) : null;
-  } catch { return null; }
+  } catch (error) {
+    console.error("[AdeptIQ] Failed to load progress", { message: error.message });
+    return null;
+  }
 }
 
 async function saveProgress(data) {
-  try { await window.storage.set(STORAGE_KEY, JSON.stringify(data)); } catch {}
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.error("[AdeptIQ] Failed to save progress", { message: error.message });
+  }
 }
 
 // ─── COMPONENTS ───
@@ -439,27 +450,43 @@ function LumoAssistant({ moduleTitle, moduleContent }) {
     setMessages(m => [...m, { role: "user", content: userMsg }]);
     setLoading(true);
     try {
+      if (!ANTHROPIC_API_KEY) {
+        throw new Error("Missing VITE_ANTHROPIC_API_KEY.");
+      }
+
       const context = moduleContent.map(c => c.text || c.desc || c.value || c.items?.join(", ") || "").filter(Boolean).join("\n");
       const history = [...messages, { role: "user", content: userMsg }].map(m => ({
         role: m.role, content: m.content
       }));
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `You are Lumo, the AI advisor for Castle Horizon Group. You are embedded within the AdeptIQ learning platform, assisting a new hire (Technical Operations Lead for CastleAgentIQ) who is working through their onboarding modules.\n\nThe learner is currently on the module: "${moduleTitle}"\n\nModule content:\n${context}\n\nAnswer questions about this module and the broader Castle Horizon Group context. Be direct, structured, and helpful. Keep answers concise — 2-3 paragraphs maximum. If the question is outside the scope of what you know from this module, say so honestly.`,
-          messages: history,
-        }),
+
+      const client = new Anthropic({
+        apiKey: ANTHROPIC_API_KEY,
+        dangerouslyAllowBrowser: true,
       });
-      const data = await res.json();
+
+      const startedAt = performance.now();
+      const data = await client.messages.create({
+        model: ANTHROPIC_MODEL,
+        max_tokens: ANTHROPIC_MAX_TOKENS,
+        system: `You are Lumo, the AI advisor for Castle Horizon Group. You are embedded within the AdeptIQ learning platform, assisting a new hire (Technical Operations Lead for CastleAgentIQ) who is working through their onboarding modules.\n\nThe learner is currently on the module: "${moduleTitle}"\n\nModule content:\n${context}\n\nAnswer questions about this module and the broader Castle Horizon Group context. Be direct, structured, and helpful. Keep answers concise - 2-3 paragraphs maximum. If the question is outside the scope of what you know from this module, say so honestly.`,
+        messages: history,
+      });
+      const latencyMs = Math.round(performance.now() - startedAt);
+
+      console.info("[AdeptIQ] Claude response metadata", {
+        latencyMs,
+        inputTokens: data.usage?.input_tokens ?? 0,
+        outputTokens: data.usage?.output_tokens ?? 0,
+      });
+
       const reply = data.content?.map(c => c.text || "").join("") || "Sorry, I couldn't process that.";
       setMessages(m => [...m, { role: "assistant", content: reply }]);
-    } catch {
+    } catch (error) {
+      console.error("[AdeptIQ] Lumo assistant request failed", { message: error.message });
       setMessages(m => [...m, { role: "assistant", content: "Connection issue — please try again." }]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (!open) return (
@@ -533,6 +560,9 @@ function LumoAssistant({ moduleTitle, moduleContent }) {
 
 // ─── MAIN APP ───
 
+/**
+ * AdeptIQ onboarding prototype application.
+ */
 export default function AdeptIQ() {
   const [activeModule, setActiveModule] = useState(0);
   const [progress, setProgress] = useState({ completed: {}, checksPassed: {} });
@@ -570,7 +600,11 @@ export default function AdeptIQ() {
 
   const handleReset = async () => {
     setProgress({ completed: {}, checksPassed: {} });
-    try { await window.storage.delete(STORAGE_KEY); } catch {}
+    try {
+      await window.storage.delete(STORAGE_KEY);
+    } catch (error) {
+      console.error("[AdeptIQ] Failed to reset progress", { message: error.message });
+    }
   };
 
   if (!loaded) return (

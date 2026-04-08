@@ -93,10 +93,28 @@ const statusBg = s => s==="Live"?"#ecfdf5":s==="Early Build"?"#fffbeb":s==="Prot
 const statusOrder = {"Live":0,"Early Build":1,"Build":2,"Prototype":3,"Design":4,"Concept":5};
 
 const NOTES_KEY = "ecosystem-notes-v3";
-async function loadNotes() { try { const r = await window.storage.get(NOTES_KEY); return r ? JSON.parse(r.value) : []; } catch { return []; } }
-async function saveNotes(notes) { try { await window.storage.set(NOTES_KEY, JSON.stringify(notes)); } catch {} }
+async function loadNotes() {
+  try {
+    const r = await window.storage.get(NOTES_KEY);
+    return r ? JSON.parse(r.value) : [];
+  } catch (error) {
+    console.error("[Ecosystem] Failed to load notes", { message: error.message });
+    return [];
+  }
+}
+
+async function saveNotes(notes) {
+  try {
+    await window.storage.set(NOTES_KEY, JSON.stringify(notes));
+  } catch (error) {
+    console.error("[Ecosystem] Failed to save notes", { message: error.message });
+  }
+}
 function formatDate(ts) { const d=new Date(ts); const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`; }
 
+/**
+ * CastleAgentIQ ecosystem explorer and notes tool.
+ */
 export default function EcosystemMap() {
   const [view, setView] = useState("ecosystem");
   const [selected, setSelected] = useState(null);
